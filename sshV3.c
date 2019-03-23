@@ -7,6 +7,7 @@
 pid_t wpid;
 int status = 0;
 int is_bad_batch_file = 0;
+char* correct_path; //= (char*)calloc(1, sizeof(char));
 //******************//
 // ********* FUNCTIONS ***********//
 void main_shell(int is_interactive, char* filename, char** path_array, int paths_size);
@@ -91,8 +92,10 @@ unsigned is_built_in_command(char* executable)
 unsigned is_valid_system_command(char* executable, char** path_array, int paths_size)
 {
     if(access(executable, X_OK) == 0)
+    {
+        //correct_path = strup("");
         return 1;
-    
+    }
     char *path;
     for(int i = 0; i < paths_size; i++)
     {
@@ -101,6 +104,7 @@ unsigned is_valid_system_command(char* executable, char** path_array, int paths_
         strcat(path, executable);
         if(access(path, X_OK) == 0)
         {
+            correct_path = strdup(path_array[i]);
             free(path);
             return 1;
         }
@@ -171,7 +175,8 @@ void run_system_commands(char** arguments_array, int num_of_args)
             arguments_array[file_index-1] = NULL;
         }
         //******* EXECVP THE COMMAND : ERROR IS HANDLED BY EXECVP ********//
-        execvp(arguments_array[0], arguments_array);
+        strcat(correct_path, arguments_array[0]);
+        execvp(correct_path, arguments_array);
     }
     else{
         //******* PARENT WAITS FOR THE CHILD TO FINISH IN THE INTERACTIVE MODE *****************//
@@ -259,6 +264,7 @@ void main_shell(int is_interactive, char* filename, char** path_array, int paths
             for(int i = 0; i < num_of_args; i++)
             free(arguments_array[i]);
             free(arguments_array);
+            //free(correct_path);
         }
         while ((wpid = wait(&status)) > 0);
     }while(line_size >= 0);
