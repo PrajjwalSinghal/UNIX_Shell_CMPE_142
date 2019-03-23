@@ -7,15 +7,19 @@
 pid_t wpid;
 int status = 0;
 int is_bad_batch_file = 0;
-char* correct_path; //= (char*)calloc(1, sizeof(char));
+char* correct_path; // USED IN EXECVP CALL BCS PATH WASN'T WORKING OTHERWISE
 //******************//
 // ********* FUNCTIONS ***********//
+
+//******* main_shell() is the starting point of the shell *************//
 void main_shell(int is_interactive, char* filename, char** path_array, int paths_size);
+//******* parse() breaks the input into separate commands *************//
 int parse(char *command, char** arguments_array);
 unsigned is_built_in_command(char* executable);
 unsigned is_valid_system_command(char* executable, char** path_array, int paths_size);
 void run_built_in_commands(char** arguments_array, int num_of_args, char** path_array, int *paths_size);
 void run_system_commands(char** arguments_array, int num_of_args);
+// is_redirected() checks if the output needs to go to a file or not ********//
 int is_redirected(char** arguments_array, int num_of_args);
 // ******************************//
 
@@ -27,10 +31,10 @@ int main(int argc, char* argv[])
     path_array[1] = strdup("/usr/bin/");
     int paths_size = 2;     // SIZE OF THE ARRAY
     // *********************************************************************** //
-    if(argc == 1){
+    if(argc == 1){      // if no arguments are passed
         main_shell(1, "stdin", path_array, paths_size);
     }
-    else if(argc == 2){
+    else if(argc == 2){ // if input file is passed
         main_shell(0, argv[1], path_array, paths_size);
     }
     else{
@@ -38,8 +42,7 @@ int main(int argc, char* argv[])
         write(STDERR_FILENO, error_message, strlen(error_message));
         return 1;
     }
-//    char error_message[30] = "An error has occurred\n";
-//    write(STDERR_FILENO, error_message, strlen(error_message));
+
     return 0;
 }
 int parse(char* command, char** arguments_array)
@@ -58,7 +61,7 @@ int parse(char* command, char** arguments_array)
         if(strcmp(found, "") == 0)
             continue;
         temp1 = strdup(found);
-        temp2 = strsep(&temp1, ">");
+        temp2 = strsep(&temp1, ">");// If the redirection operator id not separated by " "
         if(temp1 == NULL || (strcmp(found, ">") == 0))
         {
             arguments_array[i] = strdup(found);
@@ -93,18 +96,17 @@ unsigned is_valid_system_command(char* executable, char** path_array, int paths_
 {
     if(access(executable, X_OK) == 0)
     {
-        //correct_path = strup("");
         return 1;
     }
     char *path;
     for(int i = 0; i < paths_size; i++)
     {
-        path = calloc(50, sizeof(char));    // PROFESSOR RECOMMENDED (WORKS)
-        strcat(path, path_array[i]);        // strcat(path, "/bin/");
-        strcat(path, executable);
+        path = calloc(50, sizeof(char));
+        strcat(path, path_array[i]);
+        strcat(path, executable);       // concatinate the paths with the command
         if(access(path, X_OK) == 0)
         {
-            correct_path = strdup(path_array[i]);
+            correct_path = strdup(path_array[i]);// correct_path stores the path where the exec file is
             free(path);
             return 1;
         }
@@ -119,8 +121,6 @@ void run_built_in_commands(char** arguments_array, int num_of_args, char** path_
         if(num_of_args != 1){    //*** If more than 1 arguments are passes ***//
             char error_message[30] = "An error has occurred\n";
             write(STDERR_FILENO, error_message, strlen(error_message));
-            //printf("Error on line 94\n");
-            //printf("ERROR : Wrong number of arguments\n");
         }
         else
             exit(0);
@@ -129,8 +129,6 @@ void run_built_in_commands(char** arguments_array, int num_of_args, char** path_
         if(num_of_args != 2){    //*** If more than 1 arguments are passes ***//
             char error_message[30] = "An error has occurred\n";
             write(STDERR_FILENO, error_message, strlen(error_message));
-            //printf("Error on line 104\n");
-            //printf("ERROR : Wrong number of arguments\n");
         }
         else {      //*** CHANGING THE DIRECRORY ***//
             chdir(arguments_array[1]);
@@ -147,11 +145,6 @@ void run_built_in_commands(char** arguments_array, int num_of_args, char** path_
             path_array[i] = strdup(temp);
             free(temp);
         }
-//        printf("The new Paths are::\n");
-//        for(int i = 0; i < *paths_size; i++)
-//        {
-//            printf("%d- %s\n", i+1, path_array[i]);
-//        }
     }
 }
 void run_system_commands(char** arguments_array, int num_of_args)
@@ -165,7 +158,7 @@ void run_system_commands(char** arguments_array, int num_of_args)
         //*** is_redirected RETURNS THE INDEX WHERE THE FILENAME IS STORED IN THE ARRAY ***//
         int file_index = is_redirected(arguments_array, num_of_args);
         //printf("File Index %d\n", file_index);
-        if(file_index == -10)
+        if(file_index == -10)   // -10 indicates error
             return;
         if(file_index != -1){
             //*** CLOSING THE STANDARD OUTPUT AND OPENING THE FILE ***//
@@ -194,7 +187,6 @@ int is_redirected(char** arguments_array, int num_of_args)
             {
                 char error_message[30] = "An error has occurred\n";
                 write(STDERR_FILENO, error_message, strlen(error_message));
-                //printf("Error on line 155\n");
                 return -10; // this indicates error
             }
             return (i+1);
@@ -205,15 +197,13 @@ int is_redirected(char** arguments_array, int num_of_args)
 void main_shell(int is_interactive, char* filename, char** path_array, int paths_size)
 {
     FILE *input_file;
-    if(!is_interactive)
+    if(!is_interactive)         // If there is an input file
     {
         input_file = fopen(filename, "r");
         if(input_file == NULL)
         {
-            //printf("File Opening Error:\n");
             char error_message[30] = "An error has occurred\n";
             write(STDERR_FILENO, error_message, strlen(error_message));
-            //printf("Error on line 178\n");
             exit(1);
         }
     }
@@ -235,18 +225,20 @@ void main_shell(int is_interactive, char* filename, char** path_array, int paths
         while(1)
         {
             arguments_array = calloc(50, sizeof(char*));
-            found = strsep(&command, "&");
+            found = strsep(&command, "&");          // Separate if multiple commands are passed in same line
             //***** if the first character is ' ' ******/
             if(found == NULL)
                 break;
+            //******************************************************************//
             if(found[0] == ' ' || found[0] == '\n')
                 memmove(found, found + 1, strlen(found));
             unsigned long size_of_found = strlen(found);
             if(found[size_of_found-1] == ' ' || found[size_of_found-1] == '\n')
                 found[size_of_found-1] = '\0';
+            //******************************************************************//
             int num_of_args = parse(found, arguments_array);
             char* first_arg = arguments_array[0];
-            if(first_arg == NULL)
+            if(first_arg == NULL)   // If nothing is typed in the input line and '\n' is the only character
                 continue;
             if(is_built_in_command(first_arg))
             {
@@ -259,12 +251,10 @@ void main_shell(int is_interactive, char* filename, char** path_array, int paths
             else{
                 char error_message[30] = "An error has occurred\n";
                 write(STDERR_FILENO, error_message, strlen(error_message));
-                //printf("Error on line 222\n");
             }
             for(int i = 0; i < num_of_args; i++)
             free(arguments_array[i]);
             free(arguments_array);
-            //free(correct_path);
         }
         while ((wpid = wait(&status)) > 0);
     }while(line_size >= 0);
